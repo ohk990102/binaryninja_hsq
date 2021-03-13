@@ -1,0 +1,10 @@
+{
+	"pluginmetadataversion" : 2,
+	"name": "subleq64",
+	"type": ["architecture"],
+	"api": ["python3"],
+	"description": "subleq64 arch",
+	"platforms" : ["Darwin", "Linux", "Windows"],
+	"version": "0.0.1",
+	"author": "ohk990102"
+}
