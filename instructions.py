@@ -331,14 +331,14 @@ class HsqDisassembler(object):
 
 
 if __name__ == "__main__":
-    with open("./test2.bin", "rb") as f:
+    import sys
+
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} [File]", file=sys.stderr)
+        sys.exit(1)
+
+    with open(sys.argv[1], "rb") as f:
         data = f.read()
+
     disassembler = HsqDisassembler(data, 8)
-    # print(disassembler.data)
     print(disassembler)
-    print(disassembler.data[disassembler.inc])
-    print(disassembler.data[disassembler.Z])
-    print(disassembler.data[disassembler.dec])
-    print(disassembler.data[disassembler.ax])
-    print(disassembler.data[disassembler.bp])
-    print(disassembler.data[disassembler.sp])
