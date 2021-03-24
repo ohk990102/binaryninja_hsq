@@ -1,7 +1,8 @@
 import abc
-from collections import OrderedDict
 import struct
-from typing import List, Optional, Union
+from collections import OrderedDict
+from typing import List, Optional
+
 
 class Instr(object):
     __metaclass__ = abc.ABCMeta
@@ -16,20 +17,20 @@ class Instr(object):
         if self.c not in [-1, 0, self.addr + self.width]:
             return [self.addr + self.width, self.c]
         return [self.addr + self.width]
-        
+
     def __str__(self):
-        ret = f'{type(self).__name__.lower()}'
+        ret = f"{type(self).__name__.lower()}"
         for operand in self.operands:
-            ret += f' {operand}'
+            ret += f" {operand}"
         return ret
 
     def get_human_friendly_str(self, registers):
-        ret = f'{type(self).__name__.lower()}'
+        ret = f"{type(self).__name__.lower()}"
         for operand in self.operands:
             if operand in registers.keys():
-                ret += f' {registers[operand]}'
+                ret += f" {registers[operand]}"
             else:
-                ret += f' {operand}'
+                ret += f" {operand}"
         return ret
 
 
@@ -38,6 +39,7 @@ class Subleq(Instr):
         super().__init__(addr, data)
         self.a, self.b, self.c = self.data
         self.operands = [self.a, self.b, self.c]
+
 
 class Clear(Instr):
     def __init__(self, addr: int, data: List[int]):
@@ -50,9 +52,11 @@ class Clear(Instr):
             return [self.c]
         return []
 
+
 class Exit(Instr):
     def get_next_addr(self) -> List[int]:
         return []
+
 
 class Jmp(Instr):
     def __init__(self, addr: int, data: List[int]):
@@ -63,6 +67,7 @@ class Jmp(Instr):
     def get_next_addr(self) -> List[int]:
         return [self.c]
 
+
 class Mov(Instr):
     def __init__(self, addr: int, data: List[int]):
         super().__init__(addr, data)
@@ -70,6 +75,7 @@ class Mov(Instr):
         self.b = self.data[4]
         self.c = self.data[5]
         self.operands = [self.a, self.b, self.c]
+
 
 class Dec(Instr):
     def __init__(self, addr: int, data: List[int]):
@@ -82,6 +88,7 @@ class Dec(Instr):
             return [self.addr + self.width, self.c]
         return [self.addr + self.width]
 
+
 class Inc(Instr):
     def __init__(self, addr: int, data: List[int]):
         super().__init__(addr, data)
@@ -90,6 +97,7 @@ class Inc(Instr):
 
     def get_next_addr(self) -> List[int]:
         return [self.addr + self.width]
+
 
 class Call(Instr):
     def __init__(self, addr: int, data: List[int]):
@@ -102,9 +110,11 @@ class Call(Instr):
             return [self.addr + self.width, self.c]
         return [self.addr + self.width]
 
+
 class Ret(Instr):
     def get_next_addr(self) -> List[int]:
         return []
+
 
 class Push(Instr):
     def __init__(self, addr: int, data: List[int]):
@@ -118,6 +128,7 @@ class Push(Instr):
             return [self.addr + self.width, self.c]
         return [self.addr + self.width]
 
+
 class Pop(Instr):
     def __init__(self, addr: int, data: List[int]):
         super().__init__(addr, data)
@@ -130,101 +141,78 @@ class Pop(Instr):
             return [self.addr + self.width, self.c]
         return [self.addr + self.width]
 
+
 rules = OrderedDict()
-rules[Clear] = {
-    'pattern': [
-        (Subleq, 'A', 'A', None)
-    ],
-    'width': 3
-}
-rules[Jmp] = {
-    'pattern': [
-        (Clear, 'Z', None)
-    ],
-    'width': 3
-}
-rules[Exit] = {
-    'pattern': [
-        (Jmp, -1)
-    ],
-    'width': 3
-}
-rules[Dec] = {
-    'pattern': [
-        (Subleq, 'dec', None, None)
-    ],
-    'width': 3
-}
-rules[Inc] = {
-    'pattern': [
-        (Subleq, 'inc', None, None)
-    ],
-    'width': 3
-}
+rules[Clear] = {"pattern": [(Subleq, "A", "A", None)], "width": 3}
+rules[Jmp] = {"pattern": [(Clear, "Z", None)], "width": 3}
+rules[Exit] = {"pattern": [(Jmp, -1)], "width": 3}
+rules[Dec] = {"pattern": [(Subleq, "dec", None, None)], "width": 3}
+rules[Inc] = {"pattern": [(Subleq, "inc", None, None)], "width": 3}
 rules[Mov] = {
-    'pattern': [
-        (Clear, 'A', '$'), (Subleq, None, 'A', None)
-    ],
-    'width': 6,
+    "pattern": [(Clear, "A", "$"), (Subleq, None, "A", None)],
+    "width": 6,
 }
 rules[Push] = {
-    'pattern': [
-        (Dec, 'sp', '$'), (Mov, 'sp', '$+6', '$'), (Mov, 'sp', '$+1', '$'),
-        (Clear, 0, '$'), (Mov, 'sp', '$+1', '$'), (Subleq, None, 0, None)
+    "pattern": [
+        (Dec, "sp", "$"),
+        (Mov, "sp", "$+6", "$"),
+        (Mov, "sp", "$+1", "$"),
+        (Clear, 0, "$"),
+        (Mov, "sp", "$+1", "$"),
+        (Subleq, None, 0, None),
     ],
-    'width': 27,
+    "width": 27,
 }
 rules[Pop] = {
-    'pattern': [
-        (Mov, 'sp', '$+3', '$'), (Mov, 0, None, '$'), (Inc, 'sp', '$')
-    ],
-    'width': 15,
+    "pattern": [(Mov, "sp", "$+3", "$"), (Mov, 0, None, "$"), (Inc, "sp", "$")],
+    "width": 15,
 }
 rules[Call] = {
-    'pattern': [
-        (Push, '$', None), 
+    "pattern": [
+        (Push, "$", None),
     ],
-    'width': 28,
+    "width": 28,
 }
 rules[Ret] = {
-    'pattern': [
-        (Mov, 'sp', '$+3', '$'), (Mov, 0, '$+2', '$'), (Jmp, 0)
-    ],
-    'width': 15,
+    "pattern": [(Mov, "sp", "$+3", "$"), (Mov, 0, "$+2", "$"), (Jmp, 0)],
+    "width": 15,
 }
 
-keywords = [
-    'inc', 'Z', 'dec', 'ax', 'bp', 'sp'
-]
+keywords = ["inc", "Z", "dec", "ax", "bp", "sp"]
+
 
 class HsqDisassembler(object):
     def __init__(self, data: bytes, int_size: int):
         self.int_size = int_size
         if self.int_size not in (4, 8):
-            raise Exception('Invalid int size. ')
+            raise Exception("Invalid int size. ")
         self.instr_align = 3
-        self.data = list(map(lambda v: v[0], struct.iter_unpack('<i' if self.int_size == 4 else '<q', data)))
-        self.instrs: list[Optional[Instr]] = [ None for _ in range(len(self.data)) ]
+        self.data = list(
+            map(
+                lambda v: v[0],
+                struct.iter_unpack("<i" if self.int_size == 4 else "<q", data),
+            )
+        )
+        self.instrs: list[Optional[Instr]] = [None for _ in range(len(self.data))]
         self.tabs = -1
         self._phase1()
         self._phase2()
-        
 
     def get_instr(self, addr: int):
         if self.is_valid_addr(addr):
             return self.instrs[addr]
         return None
-        
+
     def put_instr(self, addr: int, instr: Instr):
         self.instrs[addr] = instr
-        for i in range(addr+1, addr + instr.width):
+        for i in range(addr + 1, addr + instr.width):
             self.instrs[i] = None
 
     def gen_simple_instr(self, addr: int):
         if not self.is_valid_addr(addr, 3):
             return None
 
-        data = self.data[addr:addr+3]
+        data = self.data[addr : addr + 3]
         instr = Subleq(addr, data)
         return instr
 
@@ -232,22 +220,22 @@ class HsqDisassembler(object):
         # Heuristics on getting register info
         top = self.gen_simple_instr(0)
         if not (top.a == 0 and top.b == 0):
-            raise Exception('Does not match higher subleq arch')
+            raise Exception("Does not match higher subleq arch")
         self.sqmain = top.get_next_addr()[1]
         instr: Subleq = self.gen_simple_instr(self.sqmain)
         self.inc = instr.a - 2
-        self.Z = instr.a -1
+        self.Z = instr.a - 1
         self.dec = instr.a
         self.ax = instr.a + 1
         self.bp = instr.a + 2
         self.sp = instr.a + 3
         self.symbol = {
-            self.inc: 'inc',
-            self.Z: 'Z',
-            self.dec: 'dec',
-            self.ax: 'ax',
-            self.bp: 'bp',
-            self.sp: 'sp'
+            self.inc: "inc",
+            self.Z: "Z",
+            self.dec: "dec",
+            self.ax: "ax",
+            self.bp: "bp",
+            self.sp: "sp",
         }
 
     def _phase2(self):
@@ -272,14 +260,14 @@ class HsqDisassembler(object):
         if instr is None:
             return None
         self.tabs += 1
-        print('\t'*self.tabs + f'{addr}: [None] -> {str(instr)}')
-        
+        print("\t" * self.tabs + f"{addr}: [None] -> {str(instr)}")
+
         self.put_instr(addr, instr)
         for key, rule in rules.items():
-            if self.peek_and_test_pattern(addr, rule['pattern']):
-                print('\t'*self.tabs + f'{addr}: {str(instr)} -> ', end='')
-                instr = key(addr, self.data[addr:addr+rule['width']])
-                print(f'{str(instr)}')
+            if self.peek_and_test_pattern(addr, rule["pattern"]):
+                print("\t" * self.tabs + f"{addr}: {str(instr)} -> ", end="")
+                instr = key(addr, self.data[addr : addr + rule["width"]])
+                print(f"{str(instr)}")
                 self.put_instr(addr, instr)
         self.tabs -= 1
         return instr
@@ -294,29 +282,29 @@ class HsqDisassembler(object):
                 instr = self.put_best_instr(cu)
                 if instr is None:
                     return False
-            
+
             if not isinstance(instr, part[0]):
                 return False
             for j in range(len(instr.operands)):
-                if part[j+1] is None:
+                if part[j + 1] is None:
                     continue
-                elif isinstance(part[j+1], int):
-                    if part[j+1] != instr.operands[j]:
+                elif isinstance(part[j + 1], int):
+                    if part[j + 1] != instr.operands[j]:
                         return False
-                elif part[j+1].startswith('$'):
-                    offset = 0 if part[j+1][1:] == '' else int(part[j+1][1:])
-                        
+                elif part[j + 1].startswith("$"):
+                    offset = 0 if part[j + 1][1:] == "" else int(part[j + 1][1:])
+
                     if cu + instr.width + offset != instr.operands[j]:
                         return False
-                elif part[j+1] in keywords:
-                    if getattr(self, part[j+1]) != instr.operands[j]:
+                elif part[j + 1] in keywords:
+                    if getattr(self, part[j + 1]) != instr.operands[j]:
                         return False
                 else:
-                    if part[j+1] in cache.keys():
-                        if cache[part[j+1]] != instr.operands[j]:
+                    if part[j + 1] in cache.keys():
+                        if cache[part[j + 1]] != instr.operands[j]:
                             return False
                     else:
-                        cache[part[j+1]] = instr.operands[j]
+                        cache[part[j + 1]] = instr.operands[j]
             next = instr.get_next_addr()
             if i == len(pattern) - 1:
                 break
@@ -324,26 +312,26 @@ class HsqDisassembler(object):
                 return False
             cu = next[0]
         return True
-            
 
     def is_valid_addr(self, addr: int, width: int = 1) -> bool:
         return 0 <= addr < len(self.data) - (width - 1)
 
     def is_register(self, addr: int) -> bool:
-        return addr in self.symbol.keys() and self.symbol[addr] in ['sp', 'bp', 'ax']
+        return addr in self.symbol.keys() and self.symbol[addr] in ["sp", "bp", "ax"]
 
     def is_fixed_symbol(self, addr: int) -> bool:
-        return addr in self.symbol.keys() and self.symbol[addr] in ['inc', 'Z', 'dec']
+        return addr in self.symbol.keys() and self.symbol[addr] in ["inc", "Z", "dec"]
 
     def __str__(self):
-        ret = ''
+        ret = ""
         for i in range(len(self.instrs)):
             if self.instrs[i] is not None:
-                ret += f'{i}: {self.instrs[i].get_human_friendly_str(self.symbol)}\n'
+                ret += f"{i}: {self.instrs[i].get_human_friendly_str(self.symbol)}\n"
         return ret
 
+
 if __name__ == "__main__":
-    with open('./test2.bin', 'rb') as f:
+    with open("./test2.bin", "rb") as f:
         data = f.read()
     disassembler = HsqDisassembler(data, 8)
     # print(disassembler.data)
